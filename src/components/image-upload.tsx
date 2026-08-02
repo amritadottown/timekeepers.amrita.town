@@ -1,33 +1,37 @@
-import { useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Upload, X } from "lucide-react"
 
 interface ImageUploadProps {
   label?: string
+  file: File | null
+  onFileChange: (file: File | null) => void
 }
 
-export function ImageUpload({ label = "Upload Timetable Image/PDF" }: ImageUploadProps) {
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+export function ImageUpload({
+  label = "Upload Timetable Image/PDF",
+  file,
+  onFileChange,
+}: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const objectUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+
+  useEffect(() => {
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [objectUrl])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
-    if (!f) return
-    setFile(f)
-    if (f.type.startsWith("image/")) {
-      const reader = new FileReader()
-      reader.onload = (ev) => setPreview(ev.target?.result as string)
-      reader.readAsDataURL(f)
-    } else if (f.type === "application/pdf") {
-      setPreview(null)
-    }
+    if (f) onFileChange(f)
+    e.target.value = ""
   }
 
   const clear = () => {
-    setFile(null)
-    setPreview(null)
+    onFileChange(null)
     if (inputRef.current) inputRef.current.value = ""
   }
 
@@ -61,23 +65,26 @@ export function ImageUpload({ label = "Upload Timetable Image/PDF" }: ImageUploa
       {file && (
         <p className="text-xs text-muted-foreground mb-2 truncate">{file.name}</p>
       )}
-      {preview && (
+      {file && file.type.startsWith("image/") && objectUrl && (
         <div className="relative border rounded overflow-hidden">
           <img
-            src={preview}
+            src={objectUrl}
             alt="Timetable reference"
             className="w-full h-auto max-h-[500px] object-contain"
           />
         </div>
       )}
-      {file && file.type === "application/pdf" && (
+      {file && file.type === "application/pdf" && objectUrl && (
         <object
-          data={URL.createObjectURL(file)}
+          data={objectUrl}
           type="application/pdf"
           className="w-full h-[500px] border rounded"
         >
           <p className="text-sm text-muted-foreground p-4">
-            PDF preview not available. <a href={URL.createObjectURL(file)} target="_blank" className="underline">Open file</a>
+            PDF preview not available.{" "}
+            <a href={objectUrl} target="_blank" className="underline">
+              Open file
+            </a>
           </p>
         </object>
       )}

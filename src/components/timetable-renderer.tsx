@@ -6,7 +6,6 @@ interface TimetableRendererProps {
   data: TimetableData | null
   configSelections: Record<string, string>
   onConfigChange: (key: string, value: string) => void
-  error: string | null
 }
 
 interface CellData {
@@ -38,7 +37,6 @@ export function TimetableRenderer({
   data,
   configSelections,
   onConfigChange,
-  error,
 }: TimetableRendererProps) {
   const resolvedSchedule = useMemo(() => {
     if (!data) return null
@@ -53,14 +51,6 @@ export function TimetableRenderer({
     if (!data) return []
     return DAYS.filter((d) => d in (resolvedSchedule ?? data.schedule))
   }, [data, resolvedSchedule])
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full p-8">
-        <p className="text-destructive text-sm">{error}</p>
-      </div>
-    )
-  }
 
   if (!data) {
     return (
@@ -176,7 +166,7 @@ export function TimetableRenderer({
                 <td className="border border-border px-3 py-1.5">{subj.code}</td>
                 <td className="border border-border px-3 py-1.5" />
                 <td className="border border-border px-3 py-1.5 text-left">{subj.name}</td>
-                <td className="border border-border px-3 py-1.5 text-left">{subj.faculty.join(", ")}</td>
+                <td className="border border-border px-3 py-1.5 text-left">{(subj.faculty ?? []).join(", ")}</td>
               </tr>
             ))}
           </tbody>

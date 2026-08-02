@@ -3,6 +3,8 @@ import { JsonEditor } from "@/components/json-editor"
 import { TimetableRenderer } from "@/components/timetable-renderer"
 import { ImageUpload } from "@/components/image-upload"
 import { Onboarding } from "@/components/onboarding"
+import { JsonErrorPanel } from "@/components/json-error-panel"
+import { validateTimetable, type ValidationIssue } from "@/lib/validate"
 import { Button } from "@/components/ui/button"
 import { ChevronRight, ChevronLeft, Maximize2, Minimize2 } from "lucide-react"
 import type { TimetableData } from "@/lib/timetable"
@@ -11,11 +13,13 @@ function App() {
   const [jsonText, setJsonText] = useState("")
   const [parsedData, setParsedData] = useState<TimetableData | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [issues, setIssues] = useState<ValidationIssue[]>([])
   const [isEditorOpen, setIsEditorOpen] = useState(true)
   const [isImagePanelOpen, setIsImagePanelOpen] = useState(true)
   const [configSelections, setConfigSelections] = useState<Record<string, string>>({})
   const [imagePanelWidth, setImagePanelWidth] = useState(320)
   const [showABSwap, setShowABSwap] = useState(false)
+  const [referenceFile, setReferenceFile] = useState<File | null>(null)
   const resizingRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -24,23 +28,31 @@ function App() {
     if (!text.trim()) {
       setParsedData(null)
       setParseError(null)
+      setIssues([])
       return
     }
     try {
-      const parsed = JSON.parse(text) as TimetableData
-      if (!parsed.subjects || !parsed.schedule || !parsed.slots || !parsed.config) {
-        throw new Error("Invalid v2 timetable format. Must have subjects, config, slots, and schedule.")
+      const parsed = JSON.parse(text)
+      const result = validateTimetable(parsed)
+      if (!result.ok) {
+        setParsedData(null)
+        setParseError(null)
+        setIssues(result.issues)
+        return
       }
-      setParsedData(parsed)
+      setParsedData(parsed as TimetableData)
       setParseError(null)
+      setIssues([])
       const selections: Record<string, string> = {}
-      for (const [key, config] of Object.entries(parsed.config)) {
-        selections[key] = config.values[0]?.id || ""
+      const config = (parsed as TimetableData).config
+      for (const [key, option] of Object.entries(config)) {
+        selections[key] = option.values[0]?.id || ""
       }
       setConfigSelections(selections)
     } catch (e) {
       setParsedData(null)
       setParseError(e instanceof SyntaxError ? `Invalid JSON: ${e.message}` : String(e))
+      setIssues([])
     }
   }, [])
 
@@ -136,16 +148,23 @@ function App() {
                   showABSwap && !isImagePanelOpen ? "hidden" : "flex-1"
                 }`}
               >
-                <TimetableRenderer
-                  data={parsedData}
-                  configSelections={configSelections}
-                  onConfigChange={handleConfigChange}
-                  error={parseError}
-                />
+                {parseError || issues.length > 0 ? (
+                  <JsonErrorPanel syntaxError={parseError} issues={issues} />
+                ) : (
+                  <TimetableRenderer
+                    data={parsedData}
+                    configSelections={configSelections}
+                    onConfigChange={handleConfigChange}
+                  />
+                )}
               </div>
               {showABSwap && !isImagePanelOpen && (
                 <div className="flex-1 min-h-0 overflow-auto p-4">
-                  <ImageUpload label="Reference Timetable" />
+                  <ImageUpload
+                    label="Reference Timetable"
+                    file={referenceFile}
+                    onFileChange={setReferenceFile}
+                  />
                 </div>
               )}
               {isImagePanelOpen && (
@@ -165,7 +184,11 @@ function App() {
                       </Button>
                     </div>
                     <div className="p-3">
-                      <ImageUpload label="Upload Timetable Image/PDF" />
+                      <ImageUpload
+                        label="Upload Timetable Image/PDF"
+                        file={referenceFile}
+                        onFileChange={setReferenceFile}
+                      />
                     </div>
                   </div>
                 </>

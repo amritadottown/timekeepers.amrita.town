@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useCopy } from "@/lib/use-copy"
 import { ArrowDown, Check, ChevronDown, Copy, FileText, Loader2 } from "lucide-react"
 
 const PROMPT_URL =
@@ -12,8 +13,7 @@ export function Onboarding() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPrompt, setShowPrompt] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const copyTimerRef = useRef<number | null>(null)
+  const { copied, copy } = useCopy()
 
   const loadPrompt = useCallback(async () => {
     setLoading(true)
@@ -31,29 +31,12 @@ export function Onboarding() {
 
   useEffect(() => {
     loadPrompt()
-    return () => {
-      if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current)
-    }
   }, [loadPrompt])
 
-  const handleCopy = useCallback(async () => {
+  const handleCopy = useCallback(() => {
     if (!prompt) return
-    try {
-      await navigator.clipboard.writeText(prompt)
-    } catch {
-      const ta = document.createElement("textarea")
-      ta.value = prompt
-      ta.style.position = "fixed"
-      ta.style.opacity = "0"
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand("copy")
-      document.body.removeChild(ta)
-    }
-    setCopied(true)
-    if (copyTimerRef.current) window.clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000)
-  }, [prompt])
+    copy(prompt)
+  }, [prompt, copy])
 
   const scrollToTool = useCallback(() => {
     document.getElementById("tool")?.scrollIntoView({ behavior: "smooth" })
