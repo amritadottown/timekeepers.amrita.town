@@ -125,7 +125,7 @@ function App() {
             <header className="border-b border-border px-4 py-2 flex items-center gap-2 shrink-0 bg-background">
               <h1 className="text-sm font-semibold">Timekeepers</h1>
               <span className="text-xs text-muted-foreground flex-1">
-                amrita.town timetable renderer
+                nithitsuki.com timetable renderer
               </span>
               {!isImagePanelOpen && (
                 <Button

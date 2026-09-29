@@ -46,7 +46,7 @@ export function Onboarding() {
     <div className="h-dvh flex flex-col overflow-y-auto">
       <header className="flex items-center gap-2 px-6 py-4 shrink-0">
         <h1 className="text-sm font-semibold">Timekeepers</h1>
-        <span className="text-xs text-muted-foreground">amrita.town · timetable registry</span>
+        <span className="text-xs text-muted-foreground">nithitsuki.com · timetable registry</span>
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center gap-8 px-6 pb-8 min-h-0">
